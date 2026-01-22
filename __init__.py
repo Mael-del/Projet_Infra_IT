@@ -7,6 +7,8 @@ import sqlite3
 
 app = Flask(__name__)                                                                                                                  
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'  # Clé secrète pour les sessions
+DB = "database.db"
+
 
 # Fonction pour créer une clé "authentifie" dans la session utilisateur
 def est_authentifie():
@@ -79,3 +81,58 @@ def enregistrer_client():
                                                                                                                                        
 if __name__ == "__main__":
   app.run(debug=True)
+
+
+def get_db():
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/ajouter", methods=["GET", "POST"])
+def ajouter():
+    if request.method == "POST":
+        titre = request.form["titre"]
+        description = request.form["description"]
+        date = request.form["date_echeance"]
+
+        db = get_db()
+        db.execute(
+            "INSERT INTO taches (titre, description, date_echeance) VALUES (?, ?, ?)",
+            (titre, description, date)
+        )
+        db.commit()
+        db.close()
+
+        return redirect(url_for("liste"))
+
+    return render_template("ajouter.html")
+
+@app.route("/liste")
+def liste():
+    db = get_db()
+    taches = db.execute("SELECT * FROM taches ORDER BY date_echeance").fetchall()
+    db.close()
+    return render_template("liste.html", taches=taches)
+
+@app.route("/supprimer/<int:id>")
+def supprimer(id):
+    db = get_db()
+    db.execute("DELETE FROM taches WHERE id = ?", (id,))
+    db.commit()
+    db.close()
+    return redirect(url_for("liste"))
+
+@app.route("/terminer/<int:id>")
+def terminer(id):
+    db = get_db()
+    db.execute("UPDATE taches SET terminee = 1 WHERE id = ?", (id,))
+    db.commit()
+    db.close()
+    return redirect(url_for("liste"))
+
+if __name__ == "__main__":
+    app.run(debug=True)
