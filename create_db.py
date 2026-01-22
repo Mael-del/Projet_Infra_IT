@@ -1,5 +1,5 @@
 import sqlite3
-import OS
+import os
 
 connection = sqlite3.connect('database.db')
 
